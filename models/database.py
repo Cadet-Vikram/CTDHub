@@ -9,8 +9,10 @@ from sqlalchemy import (
 )
 from datetime import datetime
 import uuid
+import os
 
-DATABASE_URL = "sqlite+aiosqlite:///./connecting_dots.db"
+# Use environment variable for production, default to SQLite for local dev
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./connecting_dots.db")
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
