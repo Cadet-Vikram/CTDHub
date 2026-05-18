@@ -12,7 +12,13 @@ import uuid
 import os
 
 # Use environment variable for production, default to SQLite for local dev
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./connecting_dots.db")
+db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./connecting_dots.db")
+
+# Convert postgresql:// to postgresql+asyncpg:// for async support
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+DATABASE_URL = db_url
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
