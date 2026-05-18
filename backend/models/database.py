@@ -4,13 +4,23 @@ Database models — SQLAlchemy async with SQLite (swap to PostgreSQL for product
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import text
 from sqlalchemy import (
     Column, String, Integer, Float, DateTime, Boolean, Text, JSON
 )
 from datetime import datetime
 import uuid
+import os
 
-DATABASE_URL = "sqlite+aiosqlite:///./connecting_dots.db"
+# Use environment variable for production, default to SQLite for local dev
+db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./connecting_dots.db")
+
+# Convert postgresql:// to postgresql+asyncpg:// for async support
+if db_url.startswith("postgresql://") or db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+
+DATABASE_URL = db_url
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
@@ -89,7 +99,11 @@ class User(Base):
 
 async def init_db():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        # Render boots multiple Gunicorn workers. Without a lock, they can race
+        # while PostgreSQL is creating the same table/type at the same time.
+        if conn.dialect.name == "postgresql":
+            await conn.execute(text("SELECT pg_advisory_xact_lock(673421917)"))
+        await conn.run_sync(Base.metadata.create_all, checkfirst=True)
 
 
 async def get_db():

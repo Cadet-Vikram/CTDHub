@@ -4,13 +4,28 @@ services:
   backend:
     build: ./backend
     ports:
-      - "8000:8000"
+      - "8000:8080"
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/connecting_dots.db:/app/connecting_dots.db
     environment:
       - DEBUG=true
       - DATABASE_URL=sqlite+aiosqlite:///./connecting_dots.db
+      - MODEL_SERVICE_URL=http://model-service:8080
+      - MODEL_SERVICE_TOKEN=dev-shared-secret
+      - WEB_CONCURRENCY=1
+    restart: unless-stopped
+
+  model-service:
+    build:
+      context: ./backend
+      dockerfile: model_service/Dockerfile
+    ports:
+      - "8001:8080"
+    environment:
+      - MODEL_SERVICE_TOKEN=dev-shared-secret
+      - LOAD_REAL_FACE_MODEL=false
+      - WEB_CONCURRENCY=1
     restart: unless-stopped
 
   frontend:

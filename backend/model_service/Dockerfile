@@ -2,11 +2,19 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+RUN apt-get update && apt-get install -y \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY model_service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
-RUN mkdir -p uploads/children uploads/searches uploads/progressed
+COPY models ./models
+COPY model_service/main.py ./main.py
 
 EXPOSE 8080
 CMD ["sh", "-c", "gunicorn main:app --workers ${WEB_CONCURRENCY:-1} --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8080} --timeout 120"]

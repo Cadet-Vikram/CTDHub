@@ -1,0 +1,16 @@
+# Web framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12
+gunicorn==22.0.0
+
+# Image processing
+numpy==2.2.6
+opencv-python-headless==4.10.0.84
+Pillow==11.0.0
+
+# ML stack
+mtcnn[tensorflow]==1.0.0
+keras-facenet==0.3.2
+tensorflow==2.21.0
+scipy==1.17.1
