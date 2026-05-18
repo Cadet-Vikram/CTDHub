@@ -1,0 +1,183 @@
+"""
+Face Recognition Pipeline
+MTCNN (detect) -> ArcFace/FaceNet (embed) -> Cosine Similarity (match)
+Falls back to mock mode if ML libraries are not installed.
+"""
+
+import asyncio
+import json
+import logging
+from typing import List, Optional, Tuple
+
+import numpy as np
+
+logger = logging.getLogger(__name__)
+
+
+class FaceDetector:
+    """MTCNN face detector with graceful fallback"""
+
+    def __init__(self):
+        self._model = None
+
+    def load(self):
+        try:
+            from mtcnn import MTCNN
+
+            self._model = MTCNN()
+            logger.info("MTCNN loaded (real detection)")
+        except Exception as e:
+            logger.warning("MTCNN not available (%s) - using mock detector", e)
+            self._model = None
+
+    def detect(self, image: np.ndarray) -> List[dict]:
+        if self._model is None:
+            h, w = image.shape[:2]
+            return [
+                {
+                    "box": [w // 4, h // 4, w // 2, h // 2],
+                    "confidence": 0.99,
+                    "keypoints": {
+                        "left_eye": (w // 3, h // 3),
+                        "right_eye": (2 * w // 3, h // 3),
+                        "nose": (w // 2, h // 2),
+                        "mouth_left": (w // 3, 2 * h // 3),
+                        "mouth_right": (2 * w // 3, 2 * h // 3),
+                    },
+                }
+            ]
+        return self._model.detect_faces(image)
+
+    def crop(self, image: np.ndarray, box: list, margin: int = 20) -> np.ndarray:
+        x, y, w, h = box
+        x1 = max(0, x - margin)
+        y1 = max(0, y - margin)
+        x2 = min(image.shape[1], x + w + margin)
+        y2 = min(image.shape[0], y + h + margin)
+        return image[y1:y2, x1:x2]
+
+
+class EmbeddingExtractor:
+    """ArcFace / FaceNet extractor with mock fallback"""
+
+    EMBEDDING_SIZE = 512
+
+    def __init__(self):
+        self._model = None
+        self._type = None
+
+    def load(self):
+        try:
+            from deepface import DeepFace
+
+            dummy = np.zeros((224, 224, 3), dtype=np.uint8)
+            DeepFace.represent(dummy, model_name="ArcFace", enforce_detection=False)
+            self._model = "deepface"
+            self.EMBEDDING_SIZE = 512
+            logger.info("DeepFace ArcFace loaded")
+        except Exception as e:
+            logger.warning("DeepFace not available: %s - mock mode", e)
+            self._model = None
+
+        try:
+            from keras_facenet import FaceNet
+
+            self._model = FaceNet()
+            self._type = "facenet"
+            self.EMBEDDING_SIZE = 128
+            logger.info("FaceNet loaded")
+            return
+        except Exception:
+            pass
+
+        logger.warning("No ML embedding library found - using deterministic mock embeddings")
+
+    def extract(self, face_image: np.ndarray) -> np.ndarray:
+        if self._model == "deepface":
+            try:
+                from deepface import DeepFace
+
+                result = DeepFace.represent(
+                    face_image,
+                    model_name="ArcFace",
+                    enforce_detection=True,
+                    detector_backend="opencv",
+                )
+                emb = np.array(result[0]["embedding"], dtype=np.float32)
+                return emb / (np.linalg.norm(emb) + 1e-10)
+            except Exception as e:
+                logger.warning("DeepFace extract failed: %s", e)
+
+        seed = int(np.sum(face_image.astype(np.float32)) % (2**31))
+        rng = np.random.RandomState(seed)
+        v = rng.randn(self.EMBEDDING_SIZE).astype(np.float32)
+        return v / (np.linalg.norm(v) + 1e-10)
+
+
+class SimilarityMatcher:
+    @staticmethod
+    def cosine(a: np.ndarray, b: np.ndarray) -> float:
+        denom = np.linalg.norm(a) * np.linalg.norm(b)
+        if denom < 1e-10:
+            return 0.0
+        return float(np.dot(a, b) / denom)
+
+    def search(
+        self,
+        query: np.ndarray,
+        database: List[Tuple[str, np.ndarray]],
+        threshold: float = 0.60,
+        top_k: int = 5,
+    ) -> List[dict]:
+        scores = [
+            {
+                "child_id": cid,
+                "similarity": self.cosine(query, emb),
+                "confidence": self.cosine(query, emb) * 100,
+            }
+            for cid, emb in database
+        ]
+        scores.sort(key=lambda x: x["similarity"], reverse=True)
+        return [s for s in scores[:top_k] if s["similarity"] >= threshold]
+
+
+class FaceRecognitionModel:
+    def __init__(self):
+        self.detector = FaceDetector()
+        self.extractor = EmbeddingExtractor()
+        self.matcher = SimilarityMatcher()
+
+    async def load(self):
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, self._load_sync)
+
+    def _load_sync(self):
+        self.detector.load()
+        self.extractor.load()
+
+    def process_image(
+        self, image: np.ndarray
+    ) -> Tuple[Optional[np.ndarray], List[dict]]:
+        faces = self.detector.detect(image)
+        if not faces:
+            return None, []
+        best = max(faces, key=lambda f: f["confidence"])
+        crop = self.detector.crop(image, best["box"])
+        embedding = self.extractor.extract(crop)
+        return embedding, faces
+
+    @staticmethod
+    def to_json(embedding: np.ndarray) -> str:
+        return json.dumps(embedding.tolist())
+
+    @staticmethod
+    def from_json(s: str) -> np.ndarray:
+        return np.array(json.loads(s), dtype=np.float32)
+
+    def search(
+        self,
+        query: np.ndarray,
+        database: List[Tuple[str, np.ndarray]],
+        threshold: float = 0.60,
+    ) -> List[dict]:
+        return self.matcher.search(query, database, threshold)

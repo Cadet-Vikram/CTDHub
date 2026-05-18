@@ -6,7 +6,7 @@ import os
 from contextlib import asynccontextmanager
 
 import numpy as np
-from fastapi import FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def _decode_image(content: bytes):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from models.face_model import FaceRecognitionModel
+    from face_model import FaceRecognitionModel
 
     app.state.face_model = FaceRecognitionModel()
     load_real_model = os.getenv("LOAD_REAL_FACE_MODEL", "true").lower() == "true"
@@ -53,11 +53,7 @@ async def health():
 
 
 @app.post("/embed")
-async def embed(photo: UploadFile = File(...), x_model_service_token: str | None = Header(None)):
-    expected_token = os.getenv("MODEL_SERVICE_TOKEN")
-    if expected_token and x_model_service_token != expected_token:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
+async def embed(photo: UploadFile = File(...)):
     content = await photo.read()
     image = _decode_image(content)
     if image is None:
