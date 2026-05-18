@@ -11,6 +11,7 @@ from sqlalchemy import (
 from datetime import datetime
 import uuid
 import os
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 # Use environment variable for production, default to SQLite for local dev
 db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./connecting_dots.db")
@@ -21,12 +22,27 @@ if db_url.startswith("postgresql://") or db_url.startswith("postgres://"):
     db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
     db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
-# asyncpg does not accept `sslmode`; map the common managed-Postgres setting
-# to the SSL argument it understands.
-if "sslmode=require" in db_url:
-    db_url = db_url.replace("?sslmode=require", "")
-    db_url = db_url.replace("&sslmode=require", "")
-    connect_args["ssl"] = "require"
+parsed = urlsplit(db_url)
+if parsed.scheme == "postgresql+asyncpg":
+    query_pairs = parse_qsl(parsed.query, keep_blank_values=True)
+    filtered_query = []
+    for key, value in query_pairs:
+        if key == "sslmode":
+            if value == "require":
+                connect_args["ssl"] = "require"
+            continue
+        if key == "channel_binding":
+            continue
+        filtered_query.append((key, value))
+    db_url = urlunsplit(
+        (
+            parsed.scheme,
+            parsed.netloc,
+            parsed.path,
+            urlencode(filtered_query),
+            parsed.fragment,
+        )
+    )
 
 DATABASE_URL = db_url
 
