@@ -14,15 +14,23 @@ import os
 
 # Use environment variable for production, default to SQLite for local dev
 db_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./connecting_dots.db")
+connect_args = {}
 
 # Convert postgresql:// to postgresql+asyncpg:// for async support
 if db_url.startswith("postgresql://") or db_url.startswith("postgres://"):
     db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
     db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
+# asyncpg does not accept `sslmode`; map the common managed-Postgres setting
+# to the SSL argument it understands.
+if "sslmode=require" in db_url:
+    db_url = db_url.replace("?sslmode=require", "")
+    db_url = db_url.replace("&sslmode=require", "")
+    connect_args["ssl"] = "require"
+
 DATABASE_URL = db_url
 
-engine = create_async_engine(DATABASE_URL, echo=False)
+engine = create_async_engine(DATABASE_URL, echo=False, connect_args=connect_args)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
