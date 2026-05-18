@@ -42,9 +42,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# ── CORS Configuration (Production-safe) ────────────────────────────────────
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+
+cors_origins = [
+    FRONTEND_URL,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+if DEBUG:
+    cors_origins.append("*")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

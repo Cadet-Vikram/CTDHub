@@ -7,6 +7,7 @@ websockets==13.1
 # ── Database ───────────────────────────────────────────────────────────────────
 sqlalchemy[asyncio]==2.0.36
 aiosqlite==0.20.0
+asyncpg==0.29.0
 
 # ── Auth ───────────────────────────────────────────────────────────────────────
 pyjwt==2.10.0
@@ -37,6 +38,7 @@ python-dotenv==1.0.1
 # ── Utilities ──────────────────────────────────────────────────────────────────
 httpx==0.28.0
 tqdm==4.67.1
+gunicorn==22.0.0
 
 # ── Optional: ML models (install separately after the above works) ─────────────
 # These are heavy; comment them out for a fast first run.
