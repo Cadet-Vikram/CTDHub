@@ -11,15 +11,22 @@ export const useAuthStore = create(
       isAuthenticated: false,
 
       login: async (email, password) => {
-        const res = await api.post("/auth/login", { email, password });
-        const { access_token, user } = res.data;
-        api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+        const body = new URLSearchParams();
+        body.append("username", email);
+        body.append("password", password);
+
+        const res = await api.post("/api/auth/login", body.toString(), {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        });
+        const { access_token, role } = res.data;
+        const user = { email, full_name: email, role: role || "user" };
+        api.defaults.headers.common.Authorization = `Bearer ${access_token}`;
         set({ user, token: access_token, isAuthenticated: true });
         return user;
       },
 
       logout: () => {
-        delete api.defaults.headers.common["Authorization"];
+        delete api.defaults.headers.common.Authorization;
         set({ user: null, token: null, isAuthenticated: false });
       },
     }),
@@ -27,7 +34,7 @@ export const useAuthStore = create(
       name: "ctd-auth",
       onRehydrateStorage: () => (state) => {
         if (state?.token) {
-          api.defaults.headers.common["Authorization"] = `Bearer ${state.token}`;
+          api.defaults.headers.common.Authorization = `Bearer ${state.token}`;
         }
       },
     }

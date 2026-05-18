@@ -1,27 +1,30 @@
 // src/pages/SOSPage.jsx
 import { useState, useEffect } from "react";
 import { AlertTriangle, MapPin, Phone, Send, CheckCircle } from "lucide-react";
-import toast from "react-hot-toast";
 import api from "../utils/api";
 
 export default function SOSPage() {
   const [form, setForm] = useState({
-    child_id: "", child_name: "", reporter_phone: "",
-    location_description: "", lat: "", lng: "", additional_info: "",
+    child_id: "",
+    child_name: "",
+    reporter_phone: "",
+    location_description: "",
+    lat: "",
+    lng: "",
+    additional_info: "",
   });
   const [loading, setLoading] = useState(false);
   const [triggered, setTriggered] = useState(false);
   const [children, setChildren] = useState([]);
 
   useEffect(() => {
-    api.get("/children/list?status=missing&limit=100")
-      .then(r => setChildren(r.data.children || []))
+    api.get("/api/children/?status=missing&limit=100")
+      .then((r) => setChildren(r.data || []))
       .catch(() => {});
 
-    // Get current location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((pos) => {
-        setForm(f => ({
+        setForm((f) => ({
           ...f,
           lat: pos.coords.latitude.toFixed(6),
           lng: pos.coords.longitude.toFixed(6),
@@ -30,35 +33,34 @@ export default function SOSPage() {
     }
   }, []);
 
-  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleSelectChild = (e) => {
-    const child = children.find(c => c.id === e.target.value);
-    if (child) setForm(f => ({ ...f, child_id: child.id, child_name: child.name }));
+    const child = children.find((c) => c.id === e.target.value);
+    if (child) setForm((f) => ({ ...f, child_id: child.id, child_name: child.name }));
   };
 
   const handleTrigger = async () => {
     if (!form.child_name || !form.reporter_phone || !form.location_description) {
-      toast.error("Child name, your phone and location are required");
+      window.alert("Child name, your phone and location are required");
       return;
     }
-    if (!window.confirm("⚠️ This will send EMERGENCY ALERTS to police and authorities. Confirm?")) return;
+    if (!window.confirm("This will send emergency alerts to police and authorities. Confirm?")) return;
 
     setLoading(true);
     try {
-      await api.post("/sos/trigger", {
+      await api.post("/api/alerts/sos", {
         child_id: form.child_id || "unknown",
-        child_name: form.child_name,
         reporter_phone: form.reporter_phone,
-        location_description: form.location_description,
-        lat: parseFloat(form.lat) || 0,
-        lng: parseFloat(form.lng) || 0,
-        additional_info: form.additional_info,
+        reporter_name: form.child_name || "Unknown",
+        location_lat: parseFloat(form.lat) || null,
+        location_lng: parseFloat(form.lng) || null,
+        message: [form.location_description, form.additional_info].filter(Boolean).join(" | "),
       });
       setTriggered(true);
-      toast.success("🚨 SOS Alert sent! Authorities have been notified.", { duration: 8000 });
+      window.alert("SOS Alert sent! Authorities have been notified.");
     } catch (err) {
-      toast.error("SOS failed. Call police directly: 100");
+      window.alert("SOS failed. Call police directly: 100");
     } finally {
       setLoading(false);
     }
@@ -104,7 +106,9 @@ export default function SOSPage() {
 
       <div className="alert-banner critical" style={{ marginBottom: "1.5rem" }}>
         <AlertTriangle size={16} />
-        <div>Only use this for genuine emergencies. False alerts are punishable under law. For immediate danger, also call <strong>100 (Police)</strong> or <strong>1098 (Childline)</strong>.</div>
+        <div>
+          Only use this for genuine emergencies. False alerts are punishable under law. For immediate danger, also call <strong>100 (Police)</strong> or <strong>1098 (Childline)</strong>.
+        </div>
       </div>
 
       <div style={{ maxWidth: 640 }}>
@@ -115,7 +119,7 @@ export default function SOSPage() {
             <label className="form-label">Select Registered Child (if known)</label>
             <select className="form-select" onChange={handleSelectChild}>
               <option value="">-- Not in system / Unknown --</option>
-              {children.map(c => <option key={c.id} value={c.id}>{c.name} (Age {c.age})</option>)}
+              {children.map((c) => <option key={c.id} value={c.id}>{c.name} (Age {c.age})</option>)}
             </select>
           </div>
 

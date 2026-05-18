@@ -1,5 +1,6 @@
 import React, { useState, useContext, useRef } from "react";
 import { AppContext } from "../contexts/AppContext";
+import api from "../utils/api";
 
 export default function SearchFace() {
   const { showNotification } = useContext(AppContext);
@@ -25,8 +26,10 @@ export default function SearchFace() {
       formData.append("photo", image);
       formData.append("searched_by", "dashboard_user");
 
-      const res = await fetch("http://localhost:8000/api/search/face", { method: "POST", body: formData });
-      const data = await res.json();
+      const res = await api.post("/api/search/face", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const data = res.data;
       setResults(data);
       if (data.matches?.length > 0) {
         showNotification(`Found ${data.matches.length} potential match(es)!`, "success");

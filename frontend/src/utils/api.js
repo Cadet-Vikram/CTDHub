@@ -1,23 +1,65 @@
-// src/utils/api.js
-import axios from "axios";
-import toast from "react-hot-toast";
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1",
-  timeout: 30000,
-});
-
-api.interceptors.response.use(
-  (res) => res,
-  (error) => {
-    const msg = error.response?.data?.detail || "Request failed";
-    if (error.response?.status === 401) {
-      toast.error("Session expired. Please log in again.");
-    } else if (error.response?.status >= 500) {
-      toast.error("Server error. Please try again.");
-    }
-    return Promise.reject(error);
+function resolveUrl(path) {
+  if (/^https?:\/\//i.test(path)) {
+    return path;
   }
-);
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+}
+
+async function request(path, { method = "GET", data, headers = {} } = {}) {
+  const isFormData = typeof FormData !== "undefined" && data instanceof FormData;
+  const authHeader = api.defaults.headers.common.Authorization;
+
+  const response = await fetch(resolveUrl(path), {
+    method,
+    headers: {
+      ...(authHeader ? { Authorization: authHeader } : {}),
+      ...(!isFormData && data !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...headers,
+    },
+    body:
+      data === undefined
+        ? undefined
+        : isFormData
+          ? data
+          : typeof data === "string"
+            ? data
+            : JSON.stringify(data),
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  const parsed = contentType.includes("application/json")
+    ? await response.json()
+    : await response.text();
+
+  if (!response.ok) {
+    const detail = parsed?.detail || parsed?.message || "Request failed";
+    const error = new Error(detail);
+    error.response = { status: response.status, data: parsed };
+    throw error;
+  }
+
+  return { data: parsed };
+}
+
+const api = {
+  defaults: {
+    headers: {
+      common: {},
+    },
+  },
+  get: (path, config) => request(path, { ...(config || {}), method: "GET" }),
+  post: (path, data, config) => request(path, { ...(config || {}), method: "POST", data }),
+  patch: (path, data, config) => request(path, { ...(config || {}), method: "PATCH", data }),
+  put: (path, data, config) => request(path, { ...(config || {}), method: "PUT", data }),
+  delete: (path, config) => request(path, { ...(config || {}), method: "DELETE" }),
+};
+
+export function apiUrl(path) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE_URL || "http://localhost:8000"}${normalizedPath}`;
+}
 
 export default api;

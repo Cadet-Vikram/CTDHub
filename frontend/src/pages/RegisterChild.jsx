@@ -1,5 +1,6 @@
 import React, { useState, useContext, useRef } from "react";
 import { AppContext } from "../contexts/AppContext";
+import api from "../utils/api";
 
 export default function RegisterChild() {
   const { showNotification } = useContext(AppContext);
@@ -28,8 +29,10 @@ export default function RegisterChild() {
       Object.entries(form).forEach(([k, v]) => v && fd.append(k, v));
       if (photo) fd.append("photo", photo);
 
-      const res = await fetch("http://localhost:8000/api/children/register", { method: "POST", body: fd });
-      const data = await res.json();
+      const res = await api.post("/api/children/register", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const data = res.data;
       setSuccess(data);
       showNotification(`${form.name} registered successfully!`, "success");
     } catch {

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Search, User, MapPin, Calendar, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
-import api from "../utils/api";
+import api, { apiUrl } from "../utils/api";
 
 export default function MissingList() {
   const [children, setChildren] = useState([]);
@@ -12,8 +12,8 @@ export default function MissingList() {
 
   useEffect(() => {
     setLoading(true);
-    api.get(`/children/list?status=${status}&limit=100`)
-      .then(r => setChildren(r.data.children || []))
+    api.get(`/api/children/?status=${status}&limit=100`)
+      .then(r => setChildren(r.data || []))
       .catch(() => setChildren([]))
       .finally(() => setLoading(false));
   }, [status]);
@@ -56,10 +56,10 @@ export default function MissingList() {
               <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
                 <div style={{
                   width: 52, height: 52, borderRadius: 10, flexShrink: 0,
-                  background: c.face_image_path ? `url(http://localhost:8000/${c.face_image_path}) center/cover` : "var(--bg-hover)",
+                  background: c.photo_path ? `url(${apiUrl(c.photo_path)}) center/cover` : "var(--bg-hover)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  {!c.face_image_path && <User size={22} style={{ color: "var(--text-muted)" }} />}
+                  {!c.photo_path && <User size={22} style={{ color: "var(--text-muted)" }} />}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, fontFamily: "var(--font-display)" }}>{c.name}</div>
@@ -80,9 +80,7 @@ export default function MissingList() {
                 </div>
               )}
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: "0.25rem" }}>
-                {c.has_biometrics && <span className="badge badge-medium">Biometrics</span>}
-                {c.aadhaar_verified && <span className="badge" style={{ background: "rgba(139,92,246,0.15)", color: "#a78bfa" }}>Aadhaar ✓</span>}
-                {c.too_young_for_biometrics && <span className="badge badge-high">Under 5</span>}
+                {c.has_embedding && <span className="badge badge-medium">Biometrics</span>}
               </div>
               <Link to={`/child/${c.id}`} className="btn btn-ghost" style={{ justifyContent: "center", fontSize: 12 }}>
                 <ExternalLink size={12} /> View Details

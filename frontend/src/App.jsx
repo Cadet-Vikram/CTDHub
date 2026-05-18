@@ -5,6 +5,7 @@ import SearchFace from "./pages/SearchFace";
 import ChildrenList from "./pages/ChildrenList";
 import AlertsPanel from "./pages/AlertsPanel";
 import { AppContext } from "./contexts/AppContext";
+import api from "./utils/api";
 
 const PAGES = {
   dashboard: Dashboard,
@@ -21,8 +22,8 @@ export default function App() {
   const [notification, setNotification] = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/reports/stats")
-      .then(r => r.json())
+    api.get("/api/reports/stats")
+      .then(r => r.data)
       .then(setStats)
       .catch(() => setStats({ total_registered: 247, currently_missing: 183, found: 64, total_alerts: 892, total_searches: 3241 }));
   }, []);
