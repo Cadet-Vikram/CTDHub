@@ -5,6 +5,7 @@ Run:  uvicorn main:app --reload --port 8000
 
 import logging
 import os
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -18,12 +19,18 @@ os.makedirs("uploads/children", exist_ok=True)
 os.makedirs("uploads/searches", exist_ok=True)
 os.makedirs("uploads/progressed", exist_ok=True)
 
+# Make imports work whether the app is run from `backend/` or copied into /app.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Database init
     from models.database import init_db
 
+    logger.info("Starting database initialization")
     await init_db()
     logger.info("Database ready")
 
