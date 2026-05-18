@@ -1,0 +1,46 @@
+# ── Web Framework ──────────────────────────────────────────────────────────────
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12
+websockets==13.1
+
+# ── Database ───────────────────────────────────────────────────────────────────
+sqlalchemy[asyncio]==2.0.36
+aiosqlite==0.20.0
+
+# ── Auth ───────────────────────────────────────────────────────────────────────
+pyjwt==2.10.0
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+
+# ── Image / CV (CPU-only, no CUDA required) ────────────────────────────────────
+numpy==2.2.6
+opencv-python-headless==4.10.0.84
+Pillow==11.0.0
+
+# ── Real face pipeline (CPU) ───────────────────────────────────────────────────
+# MTCNN needs TensorFlow; keep it installed so the detector path stays real.
+mtcnn[tensorflow]==1.0.0
+keras-facenet==0.3.2
+tensorflow==2.21.0
+scipy==1.17.1
+
+# Optional later: InsightFace is source-only on this setup and needs MSVC build tools.
+# insightface==0.7.3
+# onnxruntime==1.25.1
+
+# ── Pydantic / settings ────────────────────────────────────────────────────────
+pydantic==2.10.3
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+
+# ── Utilities ──────────────────────────────────────────────────────────────────
+httpx==0.28.0
+tqdm==4.67.1
+
+# ── Optional: ML models (install separately after the above works) ─────────────
+# These are heavy; comment them out for a fast first run.
+# torch>=2.0.0          — needed for ArcFace training
+# torchvision>=0.15.0   — needed for ArcFace training
+# scikit-learn==1.5.2   — evaluation metrics
+# scipy==1.14.1         — evaluation metrics
