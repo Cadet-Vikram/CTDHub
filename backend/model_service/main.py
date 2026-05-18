@@ -34,10 +34,13 @@ async def lifespan(app: FastAPI):
 
     app.state.face_model = FaceRecognitionModel()
     load_real_model = os.getenv("LOAD_REAL_FACE_MODEL", "true").lower() == "true"
+    app.state.load_real_model = load_real_model
     if load_real_model:
+        logger.info("LOAD_REAL_FACE_MODEL=true")
         await app.state.face_model.load()
         logger.info("Face model ready")
     else:
+        logger.info("LOAD_REAL_FACE_MODEL=false")
         logger.info("Face model running in lightweight mock mode")
 
     yield
@@ -49,7 +52,10 @@ app = FastAPI(title="CTD Model Service", version="1.0.0", lifespan=lifespan)
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy"}
+    return {
+        "status": "healthy",
+        "mode": "real" if getattr(app.state, "load_real_model", False) else "mock",
+    }
 
 
 @app.post("/embed")
