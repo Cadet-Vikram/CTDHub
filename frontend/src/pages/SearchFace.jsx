@@ -26,9 +26,7 @@ export default function SearchFace() {
       formData.append("photo", image);
       formData.append("searched_by", "dashboard_user");
 
-      const res = await api.post("/api/search/face", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await api.post("/api/search/face", formData);
       const data = res.data;
       setResults(data);
       if (data.matches?.length > 0) {

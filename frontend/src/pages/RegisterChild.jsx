@@ -29,9 +29,7 @@ export default function RegisterChild() {
       Object.entries(form).forEach(([k, v]) => v && fd.append(k, v));
       if (photo) fd.append("photo", photo);
 
-      const res = await api.post("/api/children/register", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await api.post("/api/children/register", fd);
       const data = res.data;
       setSuccess(data);
       showNotification(`${form.name} registered successfully!`, "success");

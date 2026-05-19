@@ -11,13 +11,18 @@ function resolveUrl(path) {
 async function request(path, { method = "GET", data, headers = {} } = {}) {
   const isFormData = typeof FormData !== "undefined" && data instanceof FormData;
   const authHeader = api.defaults.headers.common.Authorization;
+  const sanitizedHeaders = { ...headers };
+  if (isFormData) {
+    delete sanitizedHeaders["Content-Type"];
+    delete sanitizedHeaders["content-type"];
+  }
 
   const response = await fetch(resolveUrl(path), {
     method,
     headers: {
       ...(authHeader ? { Authorization: authHeader } : {}),
       ...(!isFormData && data !== undefined ? { "Content-Type": "application/json" } : {}),
-      ...headers,
+      ...sanitizedHeaders,
     },
     body:
       data === undefined
