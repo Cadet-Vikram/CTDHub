@@ -36,24 +36,9 @@ export default function SearchFace() {
       } else {
         showNotification("No matches found in database", "info");
       }
-    } catch {
-      // Demo mode: simulate results
-      const mockResults = {
-        matches: image ? [{
-          child_id: "mock-1",
-          name: "Ravi Kumar",
-          age: 8,
-          gender: "Male",
-          similarity: 0.923,
-          confidence_percent: 92.3,
-          last_seen_location: "Chennai Central Station",
-          contact_number: "+91-98765-43210",
-        }] : [],
-        face_count: 1,
-        message: "Demo mode: showing simulated match",
-      };
-      setResults(mockResults);
-      showNotification("Demo mode: simulated result shown", "info");
+    } catch (err) {
+      setResults(null);
+      showNotification(err?.response?.data?.detail || "Face search failed", "error");
     }
     setLoading(false);
   };

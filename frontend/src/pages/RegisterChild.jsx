@@ -35,9 +35,8 @@ export default function RegisterChild() {
       const data = res.data;
       setSuccess(data);
       showNotification(`${form.name} registered successfully!`, "success");
-    } catch {
-      setSuccess({ child_id: "DEMO-" + Date.now(), embedding_extracted: !!photo });
-      showNotification(`${form.name} registered (demo mode)`, "success");
+    } catch (err) {
+      showNotification(err?.response?.data?.detail || "Registration failed", "error");
     }
     setLoading(false);
   };
