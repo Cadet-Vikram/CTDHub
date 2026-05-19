@@ -71,6 +71,7 @@ class EmbeddingExtractor:
         self._type = None
 
     def load(self):
+        deepface_error = None
         try:
             from deepface import DeepFace
 
@@ -79,11 +80,10 @@ class EmbeddingExtractor:
             self._model = "deepface"
             self.EMBEDDING_SIZE = 512
             logger.info("DeepFace ArcFace loaded")
+            return
         except Exception as e:
-            if STRICT_REAL_FACE_MODEL:
-                raise RuntimeError(f"DeepFace failed to load: {e}") from e
-            logger.warning("DeepFace not available: %s - mock mode", e)
-            self._model = None
+            deepface_error = e
+            logger.warning("DeepFace not available: %s", e)
 
         try:
             from keras_facenet import FaceNet
@@ -91,13 +91,25 @@ class EmbeddingExtractor:
             self._model = FaceNet()
             self._type = "facenet"
             self.EMBEDDING_SIZE = 128
-            logger.info("FaceNet loaded")
+            logger.info("FaceNet loaded (real embedding)")
             return
         except Exception as e:
             if STRICT_REAL_FACE_MODEL:
-                raise RuntimeError(f"FaceNet failed to load: {e}") from e
+                raise RuntimeError(
+                    f"FaceNet failed to load: {e}. DeepFace error was: {deepface_error}"
+                ) from e
 
         logger.warning("No ML embedding library found - using deterministic mock embeddings")
+
+    @staticmethod
+    def _prepare_for_facenet(face_image: np.ndarray) -> np.ndarray:
+        try:
+            import cv2
+
+            face_image = cv2.resize(face_image, (160, 160))
+            return cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
+        except Exception:
+            return face_image
 
     def extract(self, face_image: np.ndarray) -> np.ndarray:
         if self._model == "deepface":
@@ -114,6 +126,15 @@ class EmbeddingExtractor:
                 return emb / (np.linalg.norm(emb) + 1e-10)
             except Exception as e:
                 logger.warning("DeepFace extract failed: %s", e)
+
+        if self._type == "facenet" and self._model is not None:
+            try:
+                prepared = self._prepare_for_facenet(face_image)
+                embeddings = self._model.embeddings([prepared])
+                emb = np.array(embeddings[0], dtype=np.float32)
+                return emb / (np.linalg.norm(emb) + 1e-10)
+            except Exception as e:
+                logger.warning("FaceNet extract failed: %s", e)
 
         seed = int(np.sum(face_image.astype(np.float32)) % (2**31))
         rng = np.random.RandomState(seed)
