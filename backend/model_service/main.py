@@ -34,9 +34,12 @@ async def lifespan(app: FastAPI):
 
     app.state.face_model = FaceRecognitionModel()
     load_real_model = os.getenv("LOAD_REAL_FACE_MODEL", "true").lower() == "true"
+    strict_real_model = os.getenv("FACE_MODEL_STRICT", "true").lower() == "true"
     app.state.load_real_model = load_real_model
+    app.state.strict_real_model = strict_real_model
     if load_real_model:
         logger.info("LOAD_REAL_FACE_MODEL=true")
+        logger.info("FACE_MODEL_STRICT=%s", strict_real_model)
         await app.state.face_model.load()
         logger.info("Face model ready")
     else:
@@ -55,6 +58,7 @@ async def health():
     return {
         "status": "healthy",
         "mode": "real" if getattr(app.state, "load_real_model", False) else "mock",
+        "strict": getattr(app.state, "strict_real_model", True),
     }
 
 

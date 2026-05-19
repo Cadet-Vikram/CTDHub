@@ -7,11 +7,13 @@ Falls back to mock mode if ML libraries are not installed.
 import asyncio
 import json
 import logging
+import os
 from typing import List, Optional, Tuple
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
+STRICT_REAL_FACE_MODEL = os.getenv("FACE_MODEL_STRICT", "true").lower() == "true"
 
 
 class FaceDetector:
@@ -27,6 +29,8 @@ class FaceDetector:
             self._model = MTCNN()
             logger.info("MTCNN loaded (real detection)")
         except Exception as e:
+            if STRICT_REAL_FACE_MODEL:
+                raise RuntimeError(f"MTCNN failed to load: {e}") from e
             logger.warning("MTCNN not available (%s) - using mock detector", e)
             self._model = None
 
@@ -76,6 +80,8 @@ class EmbeddingExtractor:
             self.EMBEDDING_SIZE = 512
             logger.info("DeepFace ArcFace loaded")
         except Exception as e:
+            if STRICT_REAL_FACE_MODEL:
+                raise RuntimeError(f"DeepFace failed to load: {e}") from e
             logger.warning("DeepFace not available: %s - mock mode", e)
             self._model = None
 
@@ -87,8 +93,9 @@ class EmbeddingExtractor:
             self.EMBEDDING_SIZE = 128
             logger.info("FaceNet loaded")
             return
-        except Exception:
-            pass
+        except Exception as e:
+            if STRICT_REAL_FACE_MODEL:
+                raise RuntimeError(f"FaceNet failed to load: {e}") from e
 
         logger.warning("No ML embedding library found - using deterministic mock embeddings")
 
