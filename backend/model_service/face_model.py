@@ -188,6 +188,19 @@ class FaceRecognitionModel:
     def process_image(
         self, image: np.ndarray
     ) -> Tuple[Optional[np.ndarray], List[dict]]:
+        try:
+            h, w = image.shape[:2]
+            max_dim = max(h, w)
+            if max_dim > 1024:
+                import cv2
+
+                scale = 1024 / float(max_dim)
+                new_w = max(1, int(w * scale))
+                new_h = max(1, int(h * scale))
+                image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        except Exception as exc:
+            logger.warning("Image resize skipped: %s", exc)
+
         faces = self.detector.detect(image)
         if not faces:
             return None, []

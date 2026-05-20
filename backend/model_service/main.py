@@ -17,15 +17,30 @@ def _decode_image(content: bytes):
         import cv2
 
         arr = np.frombuffer(content, np.uint8)
-        return cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        image = cv2.imdecode(arr, cv2.IMREAD_COLOR)
     except Exception:
         try:
             from PIL import Image
 
             img = Image.open(io.BytesIO(content)).convert("RGB")
-            return np.array(img)[:, :, ::-1]
+            image = np.array(img)[:, :, ::-1]
         except Exception:
             return None
+
+    if image is None:
+        return None
+
+    h, w = image.shape[:2]
+    max_dim = max(h, w)
+    if max_dim > 1024:
+        scale = 1024 / float(max_dim)
+        new_w = max(1, int(w * scale))
+        new_h = max(1, int(h * scale))
+        import cv2
+
+        image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+    return image
 
 
 @asynccontextmanager
