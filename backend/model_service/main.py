@@ -73,7 +73,11 @@ async def embed(photo: UploadFile = File(...)):
     if face_model is None:
         raise HTTPException(status_code=503, detail="Face model not ready")
 
-    embedding, faces = face_model.process_image(image)
+    try:
+        embedding, faces = face_model.process_image(image)
+    except Exception as exc:
+        logger.exception("Face processing failed for %s", photo.filename)
+        raise HTTPException(status_code=422, detail=f"Unable to process image: {exc}") from exc
     if embedding is None:
         return {
             "embedding": None,

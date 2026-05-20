@@ -58,6 +58,8 @@ class FaceDetector:
         y1 = max(0, y - margin)
         x2 = min(image.shape[1], x + w + margin)
         y2 = min(image.shape[0], y + h + margin)
+        if x2 <= x1 or y2 <= y1:
+            return image[0:0, 0:0]
         return image[y1:y2, x1:x2]
 
 
@@ -191,6 +193,9 @@ class FaceRecognitionModel:
             return None, []
         best = max(faces, key=lambda f: f["confidence"])
         crop = self.detector.crop(image, best["box"])
+        if crop.size == 0:
+            logger.warning("Detected face crop was empty")
+            return None, faces
         embedding = self.extractor.extract(crop)
         return embedding, faces
 
