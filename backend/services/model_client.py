@@ -20,5 +20,15 @@ async def extract_embedding(content: bytes, filename: str | None = None) -> dict
     timeout = httpx.Timeout(120.0, connect=10.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
         response = await client.post(url, files=files)
-        response.raise_for_status()
+        if response.status_code >= 400:
+            detail = response.text
+            try:
+                detail_json = response.json()
+                if isinstance(detail_json, dict):
+                    detail = detail_json.get("detail") or detail_json.get("message") or detail
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"Model service returned {response.status_code}: {detail}"
+            )
         return response.json()

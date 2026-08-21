@@ -80,6 +80,7 @@ async def health():
 @app.post("/embed")
 async def embed(photo: UploadFile = File(...)):
     content = await photo.read()
+    logger.info("Embed request filename=%s size=%s", photo.filename, len(content))
     image = _decode_image(content)
     if image is None:
         raise HTTPException(status_code=400, detail="Invalid image file")
