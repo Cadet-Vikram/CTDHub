@@ -1,0 +1,33 @@
+# ── Web Framework ─────────────────────────────────────────────────────────────
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12
+websockets==13.1
+
+# ── Database (SQLite local + PostgreSQL production) ───────────────────────────
+sqlalchemy[asyncio]==2.0.36
+aiosqlite==0.20.0
+asyncpg==0.30.0
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+pyjwt==2.10.0
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+
+# ── Face Recognition — DeepFace (no build tools / no NVIDIA needed) ───────────
+deepface==0.0.93
+tf-keras==2.18.0
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+Pillow==11.0.0
+
+# ── Pydantic / Settings ───────────────────────────────────────────────────────
+pydantic==2.10.3
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+httpx==0.28.0
+tqdm==4.67.1
+
+torch==2.5.1

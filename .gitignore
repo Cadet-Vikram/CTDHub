@@ -1,0 +1,11 @@
+
+backend/checkpoints/*.pth
+backend/checkpoints/*.pth
+connecting-the-dots/backend/checkpoints/*.pth
+backend/connecting_dots.db
+backend/**/__pycache__/
+**/__pycache__/
+backend/uvicorn*.log
+**/*.pyc
+.venv/
+.venv311/

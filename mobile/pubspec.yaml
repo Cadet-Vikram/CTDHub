@@ -1,0 +1,35 @@
+name: connecting_the_dots
+description: AI-powered missing children identification app
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # HTTP & networking
+  dio: ^5.7.0
+
+  # Camera & image picking
+  image_picker: ^1.1.2
+
+  # Local storage
+  shared_preferences: ^2.3.3
+
+  # UI helpers
+  cached_network_image: ^3.4.1
+
+  # Utilities
+  intl: ^0.19.0
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
