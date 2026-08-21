@@ -1,0 +1,88 @@
+"""
+Connecting the Dots - Backend API
+Run:  uvicorn main:app --reload --port 8000
+"""
+
+import logging
+import os
+import sys
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
+
+os.makedirs("uploads/children", exist_ok=True)
+os.makedirs("uploads/searches", exist_ok=True)
+os.makedirs("uploads/progressed", exist_ok=True)
+
+# Make imports work whether the app is run from `backend/` or copied into /app.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Database init
+    from models.database import init_db
+
+    logger.info("Starting database initialization")
+    await init_db()
+    logger.info("Database ready")
+
+    yield
+    logger.info("Shutting down")
+
+
+app = FastAPI(
+    title="Connecting the Dots API",
+    description="AI-powered missing children identification system",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+
+cors_origins = [
+    FRONTEND_URL,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+if DEBUG:
+    cors_origins.append("*")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+from api.routes import alerts, auth, children, reports, search
+from api.websocket import ws_router
+
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(children.router, prefix="/api/children", tags=["Children"])
+app.include_router(search.router, prefix="/api/search", tags=["Search"])
+app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
+app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
+app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+
+@app.get("/", tags=["Health"])
+async def root():
+    return {"status": "online", "service": "Connecting the Dots", "version": "1.0.0"}
+
+
+@app.get("/health", tags=["Health"])
+async def health():
+    return {"status": "healthy"}

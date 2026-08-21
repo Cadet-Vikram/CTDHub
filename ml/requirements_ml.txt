@@ -1,0 +1,25 @@
+# ── Core ML ───────────────────────────────────────────────────────────────────
+# Install PyTorch first from https://pytorch.org/get-started/locally/
+# CPU-only (slower but works everywhere):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# CUDA 11.8 (if you have NVIDIA GPU):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+
+torchvision>=0.15.0
+
+# ── Face Detection ────────────────────────────────────────────────────────────
+mtcnn==0.1.1
+tensorflow>=2.12.0      # required by mtcnn
+
+# ── Image Processing ──────────────────────────────────────────────────────────
+opencv-python-headless==4.10.0.84
+Pillow>=10.0.0
+numpy>=1.24.0
+
+# ── Evaluation & Plotting ─────────────────────────────────────────────────────
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+tqdm>=4.66.0
+pyyaml>=6.0.1

@@ -1,0 +1,29 @@
+model:
+  generator_residual_blocks: 9
+  age_embedding_dim: 64
+  image_size: 256
+
+loss_weights:
+  adversarial: 1.0
+  cycle_consistency: 10.0
+  identity: 5.0
+
+training:
+  epochs: 100
+  batch_size: 8
+  num_workers: 4
+  lr_generator: 0.0002
+  lr_discriminator: 0.0002
+  beta1: 0.5
+  beta2: 0.999
+  decay_start_epoch: 50
+
+data:
+  train_dir: ./data/utk_aligned
+  dataset_type: utk
+  img_size: 256
+
+output:
+  checkpoint_dir: ./checkpoints/age_gan
+  sample_dir:     ./checkpoints/age_gan/samples
+  save_every_n_epochs: 10
